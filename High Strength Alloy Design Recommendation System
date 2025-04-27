@@ -1,0 +1,57 @@
+import numpy as np
+import pandas as pd
+import streamlit as st
+from sklearn.neighbors import NearestNeighbors
+
+# Step 1: Simulate alloy composition dataset
+np.random.seed(42)
+
+n_samples = 200
+
+# Features: % of Al, Cu, Mg, Zn + performance metrics
+al = np.random.uniform(85, 95, n_samples)    # Aluminum %
+cu = np.random.uniform(2, 6, n_samples)       # Copper %
+mg = np.random.uniform(0.5, 5, n_samples)     # Magnesium %
+zn = np.random.uniform(1, 8, n_samples)       # Zinc %
+
+# Target: Strength (MPa) and Sustainability score (0-100)
+strength = 200 + 5*cu + 10*mg + 7*zn + np.random.normal(0, 10, n_samples)
+sustainability = 100 - (0.5*cu + 0.8*zn + np.random.normal(0, 2, n_samples))
+
+# Build dataframe
+data = pd.DataFrame({
+    'Al (%)': al,
+    'Cu (%)': cu,
+    'Mg (%)': mg,
+    'Zn (%)': zn,
+    'Strength (MPa)': strength,
+    'Sustainability Score': sustainability
+})
+
+# Step 2: Build recommendation system
+features = data[['Strength (MPa)', 'Sustainability Score']]
+recommender = NearestNeighbors(n_neighbors=3)
+recommender.fit(features)
+
+# Step 3: Create Streamlit UI
+st.title("High Strength Aluminum Alloy Recommendation System")
+
+st.write("""
+### Enter Desired Performance Metrics:
+""")
+
+desired_strength = st.slider('Desired Strength (MPa)', 200, 400, 300)
+desired_sustainability = st.slider('Desired Sustainability Score', 50, 100, 80)
+
+# Find nearest alloys
+query = np.array([[desired_strength, desired_sustainability]])
+distances, indices = recommender.kneighbors(query)
+
+st.write("### Recommended Alloy Compositions:")
+
+for idx in indices[0]:
+    alloy = data.iloc[idx]
+    st.write(f"- **Alloy Composition:** Al: {alloy['Al (%)']:.2f}%, Cu: {alloy['Cu (%)']:.2f}%, Mg: {alloy['Mg (%)']:.2f}%, Zn: {alloy['Zn (%)']:.2f}%")
+    st.write(f"  - Strength: {alloy['Strength (MPa)']:.1f} MPa")
+    st.write(f"  - Sustainability Score: {alloy['Sustainability Score']:.1f}")
+    st.write("---")
